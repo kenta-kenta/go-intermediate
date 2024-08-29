@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -16,19 +16,20 @@ func HelloHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func PostArticleHandler(w http.ResponseWriter, req *http.Request) {
-	article := models.Article1
-	jsonData, err := json.Marshal(article)
-	if err != nil {
-		http.Error(w, "fail to encode json\n", http.StatusInternalServerError)
-		return
+	//json→goのデコード
+	var reqArticle models.Article
+	if err := json.NewDecoder(req.Body).Decode(&reqArticle); err != nil {
+		http.Error(w, "fail to decode json\n", http.StatusBadRequest)
 	}
 
-	w.Write(jsonData)
+	//go→jsonのエンコード
+	article := reqArticle
+	json.NewEncoder(w).Encode(article)
 }
 
 func ArticleListHandler(w http.ResponseWriter, req *http.Request) {
+	//クエリパラメータ
 	queryMap := req.URL.Query()
-
 	var page int
 	if p, ok := queryMap["page"]; ok && len(p) > 0 {
 		var err error
@@ -41,25 +42,37 @@ func ArticleListHandler(w http.ResponseWriter, req *http.Request) {
 	} else {
 		page = 1
 	}
+	log.Println(page)
 
-	resString := fmt.Sprintf("Article List (page %d)\n", page)
-	io.WriteString(w, resString)
+	//jsonへのエンコード
+	articleList := []models.Article{models.Article1, models.Article2}
+	json.NewEncoder(w).Encode(articleList)
 }
 
 func ArticleDetailHandler(w http.ResponseWriter, req *http.Request) {
-	articleID, err := strconv.Atoi(mux.Vars(req)["id"])
+	//パスパラメータ
+	_, err := strconv.Atoi(mux.Vars(req)["id"])
 	if err != nil {
 		http.Error(w, "Invalid query parameter", http.StatusBadRequest)
 		return
 	}
-	resString := fmt.Sprintf("Article No.%d\n", articleID)
-	io.WriteString(w, resString)
+	// resString := fmt.Sprintf("Article No.%d\n", articleID)
+	// io.WriteString(w, resString)
+
+	//jsonへのエンコード
+	article := models.Article1
+	json.NewEncoder(w).Encode(article)
+
 }
 
 func PostNiceHandler(w http.ResponseWriter, req *http.Request) {
-	io.WriteString(w, "Posting Nice...\n")
+	//jsonへのエンコード
+	article := models.Article1
+	json.NewEncoder(w).Encode(article)
 }
 
 func PostCommentHandler(w http.ResponseWriter, req *http.Request) {
-	io.WriteString(w, "Posting Comment...\n")
+	//jsonへのエンコード
+	comment := models.Comment1
+	json.NewEncoder(w).Encode(comment)
 }
