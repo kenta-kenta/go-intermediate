@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"dbsample/models"
 	"fmt"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -27,37 +26,99 @@ func main() {
 	//プログラムが終了するときに、コネクションがcloseされるようにする
 	defer db.Close()
 
-	//クエリの定義
-	articleID := 0
-	const sqlStr = `
-		select *
-		from articles
-		where article_id = ?;
-	`
-
-	//クエリの実行
-	row := db.QueryRow(sqlStr, articleID)
-	//データ読み出しが0件だった場合
-	if err := row.Err(); err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	//rowsからのデータの読み出し
-	//articleが複数入るスライスを作成する
-	var article models.Article
-	var createdTime sql.NullTime
-
-	articleArray := make([]models.Article, 0)
-	err = row.Scan(&article.ID, &article.Title, &article.Contents, &article.UserName, &article.NiceNum, &createdTime)
+	//トランザクションの実行------------------------------------------------------------
+	tx, err := db.Begin()
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	if createdTime.Valid {
-		article.CreatedAt = createdTime.Time
+	//現在のいいね数を取得するクエリを実行する
+	article_id := 1
+	const sqlGetNice = `
+		select nice
+		from articles
+		where article_id = ?;
+	`
+	row := tx.QueryRow(sqlGetNice, article_id)
+	if err := row.Err(); err != nil {
+		fmt.Println(err)
+		tx.Rollback()
+		return
 	}
 
-	fmt.Printf("%+v\n", articleArray)
+	//変数nicenumに現在のいいね数を読み込む
+	var nicenum int
+	err = row.Scan(&nicenum)
+	if err != nil {
+		fmt.Println(err)
+		tx.Rollback()
+		return
+	}
+
+	//いいね数を+1する更新処理を行う
+	const sqlUpdateNice = `update articles set nice = ? where article_id = ?`
+	_, err = tx.Exec(sqlUpdateNice, nicenum+1, article_id)
+	if err != nil {
+		fmt.Println(err)
+		tx.Rollback()
+		return
+	}
+
+	tx.Commit()
+
+	// //データを挿入する処理-----------------------------------------------------------
+	// article := models.Article{
+	// 	Title:    "insert test",
+	// 	Contents: "Can I insert data correctly?",
+	// 	UserName: "saki",
+	// }
+	// const sqlStr = `
+	// 	insert into articles (title, contents, username, nice, created_at)
+	// 	values (?, ?, ?, 0, now())
+	// `
+
+	// result, err := db.Exec(sqlStr, article.Title, article.Contents, article.UserName)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	return
+	// }
+
+	// fmt.Println(result.LastInsertId())
+	// fmt.Println(result.RowsAffected())
+
+	//データの読み出し---------------------------------------------------------
+	// //クエリの定義
+	// articleID := 0
+	// const sqlStr = `
+	// 	select *
+	// 	from articles
+	// 	where article_id = ?;
+	// `
+
+	// //クエリの実行
+	// row := db.QueryRow(sqlStr, articleID)
+	// //データ読み出しが0件だった場合
+	// if err := row.Err(); err != nil {
+	// 	fmt.Println(err)
+	// 	return
+	// }
+
+	// //rowsからのデータの読み出し
+	// //articleが複数入るスライスを作成する
+	// var article models.Article
+	// var createdTime sql.NullTime
+
+	// articleArray := make([]models.Article, 0)
+	// err = row.Scan(&article.ID, &article.Title, &article.Contents, &article.UserName, &article.NiceNum, &createdTime)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	return
+	// }
+
+	// if createdTime.Valid {
+	// 	article.CreatedAt = createdTime.Time
+	// }
+
+	// fmt.Printf("%+v\n", articleArray)
 }
