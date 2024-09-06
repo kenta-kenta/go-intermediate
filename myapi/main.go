@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/kenta-kenta/go-intermediate-chapter1/handlers"
+	"github.com/kenta-kenta/go-intermediate-myapi/handlers"
 )
 
 func main() {
