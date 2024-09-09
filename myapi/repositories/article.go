@@ -106,7 +106,7 @@ func UpdateNiceNum(db *sql.DB, articleID int) error {
 	}
 
 	const sqlUpdateNice = `
-		update article set nice = ?
+		update articles set nice = ?
 		where article_id = ?;
 	`
 	_, err = tx.Exec(sqlUpdateNice, nicenum+1, articleID)
