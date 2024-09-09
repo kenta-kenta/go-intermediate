@@ -26,7 +26,7 @@ func InsertComment(db *sql.DB, comment models.Comment) (models.Comment, error) {
 }
 
 // 指定IDの記事についたコメント一覧を取得する関数
-func SelectaCommentList(db *sql.DB, articleID int) ([]models.Comment, error) {
+func SelectCommentList(db *sql.DB, articleID int) ([]models.Comment, error) {
 	const sqlStr = `
 		select * from comments
 		where article_id = ?;
@@ -47,6 +47,7 @@ func SelectaCommentList(db *sql.DB, articleID int) ([]models.Comment, error) {
 		if createdTime.Valid {
 			comment.CreatedAt = createdTime.Time
 		}
+		commentArray = append(commentArray, comment)
 	}
 	return commentArray, nil
 }
