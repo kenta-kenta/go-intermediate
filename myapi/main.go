@@ -6,9 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/gorilla/mux"
-	"github.com/kenta-kenta/go-intermediate-myapi/controllers"
-	"github.com/kenta-kenta/go-intermediate-myapi/services"
+	"github.com/kenta-kenta/go-intermediate-myapi/api"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -21,24 +19,16 @@ var (
 )
 
 func main() {
+	// APIを動かすのに必要なデータベースを用意する
 	db, err := sql.Open("mysql", dbConn)
 	if err != nil {
 		log.Println("fail to connect DB")
 		return
 	}
 
-	ser := services.NewMyAppService(db)
-	con := controllers.NewMyAppController(ser)
+	r := api.NewRouter(db)
 
-	r := mux.NewRouter()
-
-	r.HandleFunc("/hello", con.HelloHandler).Methods(http.MethodGet)
-	r.HandleFunc("/article", con.PostArticleHandler).Methods(http.MethodPost)
-	r.HandleFunc("/article/list", con.ArticleListHandler).Methods(http.MethodGet)
-	r.HandleFunc("/article/{id:[0-9]+}", con.ArticleDetailHandler).Methods(http.MethodGet)
-	r.HandleFunc("/article/nice", con.PostNiceHandler).Methods(http.MethodPost)
-	r.HandleFunc("/comment", con.PostCommentHandler).Methods(http.MethodPost)
-
+	// サーバを起動する
 	log.Println("server start at port 8080")
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
