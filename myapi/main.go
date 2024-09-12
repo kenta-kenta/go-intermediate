@@ -1,23 +1,34 @@
 package main
 
 import (
+	"database/sql"
+	"fmt"
 	"log"
 	"net/http"
 
-	"github.com/gorilla/mux"
-	"github.com/kenta-kenta/go-intermediate-myapi/handlers"
+	"github.com/kenta-kenta/go-intermediate-myapi/api"
+
+	_ "github.com/go-sql-driver/mysql"
+)
+
+var (
+	dbUser     = "docker"
+	dbPassword = "docker"
+	dbDatabase = "sampledb"
+	dbConn     = fmt.Sprintf("%s:%s@tcp(127.0.0.1:3307)/%s?parseTime=true", dbUser, dbPassword, dbDatabase)
 )
 
 func main() {
-	r := mux.NewRouter()
+	// APIを動かすのに必要なデータベースを用意する
+	db, err := sql.Open("mysql", dbConn)
+	if err != nil {
+		log.Println("fail to connect DB")
+		return
+	}
 
-	r.HandleFunc("/hello", handlers.HelloHandler).Methods(http.MethodGet)
-	r.HandleFunc("/article", handlers.PostArticleHandler).Methods(http.MethodPost)
-	r.HandleFunc("/article/list", handlers.ArticleListHandler).Methods(http.MethodGet)
-	r.HandleFunc("/article/{id:[0-9]+}", handlers.ArticleDetailHandler).Methods(http.MethodGet)
-	r.HandleFunc("/article/nice", handlers.PostNiceHandler).Methods(http.MethodPost)
-	r.HandleFunc("/comment", handlers.PostCommentHandler).Methods(http.MethodPost)
+	r := api.NewRouter(db)
 
+	// サーバを起動する
 	log.Println("server start at port 8080")
 	log.Fatal(http.ListenAndServe(":8080", r))
 }

@@ -1,4 +1,4 @@
-package handlers
+package controllers
 
 import (
 	"encoding/json"
@@ -8,16 +8,24 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"github.com/kenta-kenta/go-intermediate-myapi/controllers/services"
 	"github.com/kenta-kenta/go-intermediate-myapi/models"
-	"github.com/kenta-kenta/go-intermediate-myapi/services"
 )
 
-func HelloHandler(w http.ResponseWriter, req *http.Request) {
+type ArticleController struct {
+	service services.ArticleServicer
+}
+
+func NewArticleController(s services.ArticleServicer) *ArticleController {
+	return &ArticleController{service: s}
+}
+
+func (c *ArticleController) HelloHandler(w http.ResponseWriter, req *http.Request) {
 	io.WriteString(w, "Hello World!\n")
 }
 
 // GET /article/{id} のハンドラ
-func ArticleDetailHandler(w http.ResponseWriter, req *http.Request) {
+func (c *ArticleController) ArticleDetailHandler(w http.ResponseWriter, req *http.Request) {
 	//パスパラメータ
 	articleID, err := strconv.Atoi(mux.Vars(req)["id"])
 	if err != nil {
@@ -26,7 +34,7 @@ func ArticleDetailHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// service層の呼び出し
-	article, err := services.GetArticleService(articleID)
+	article, err := c.service.GetArticleService(articleID)
 	if err != nil {
 		log.Printf("Error in ArticleDetailHandler: %v", err)
 		http.Error(w, "fail internal exec\n", http.StatusInternalServerError)
@@ -37,7 +45,7 @@ func ArticleDetailHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 // POST /article のハンドラ
-func PostArticleHandler(w http.ResponseWriter, req *http.Request) {
+func (c *ArticleController) PostArticleHandler(w http.ResponseWriter, req *http.Request) {
 	//json→goのデコード
 	var reqArticle models.Article
 	if err := json.NewDecoder(req.Body).Decode(&reqArticle); err != nil {
@@ -45,7 +53,7 @@ func PostArticleHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// service層の呼び出し
-	article, err := services.PostArticleService(reqArticle)
+	article, err := c.service.PostArticleService(reqArticle)
 	if err != nil {
 		http.Error(w, "fail internal exec\n", http.StatusInternalServerError)
 		return
@@ -56,7 +64,7 @@ func PostArticleHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 // GET /article/list のハンドラ
-func ArticleListHandler(w http.ResponseWriter, req *http.Request) {
+func (c *ArticleController) ArticleListHandler(w http.ResponseWriter, req *http.Request) {
 	//クエリパラメータ
 	queryMap := req.URL.Query()
 	var page int
@@ -73,7 +81,7 @@ func ArticleListHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// sesrvice層の呼び出し
-	articleList, err := services.GetArticleListService(page)
+	articleList, err := c.service.GetArticleListService(page)
 	if err != nil {
 		http.Error(w, "fail internal exec\n", http.StatusInternalServerError)
 		return
@@ -84,14 +92,14 @@ func ArticleListHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 // POST /article/nice のハンドラ
-func PostNiceHandler(w http.ResponseWriter, req *http.Request) {
+func (c *ArticleController) PostNiceHandler(w http.ResponseWriter, req *http.Request) {
 	var reqArticle models.Article
 	if err := json.NewDecoder(req.Body).Decode(&reqArticle); err != nil {
 		http.Error(w, "fail to decode json\n", http.StatusBadRequest)
 	}
 
 	// service層の呼び出し
-	article, err := services.PostNiceService(reqArticle)
+	article, err := c.service.PostNiceService(reqArticle)
 	if err != nil {
 		http.Error(w, "fail internal exec\n", http.StatusInternalServerError)
 		return
@@ -99,22 +107,4 @@ func PostNiceHandler(w http.ResponseWriter, req *http.Request) {
 
 	//jsonへのエンコード
 	json.NewEncoder(w).Encode(article)
-}
-
-// POST /comment のハンドラ
-func PostCommentHandler(w http.ResponseWriter, req *http.Request) {
-	var reqComment models.Comment
-	if err := json.NewDecoder(req.Body).Decode(&reqComment); err != nil {
-		http.Error(w, "fail to decode json\n", http.StatusBadRequest)
-	}
-
-	// service層の呼び出し
-	comment, err := services.PostCommentService(reqComment)
-	if err != nil {
-		http.Error(w, "fail internal exec\n", http.StatusInternalServerError)
-		return
-	}
-
-	//jsonへのエンコード
-	json.NewEncoder(w).Encode(comment)
 }
