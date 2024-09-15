@@ -30,7 +30,7 @@ func TestArticleListHandler(t *testing.T) {
 
 			// httptest.ResponseRecoder型のCodeフィールドが期待通りかチェック
 			if res.Code != tt.resultCode {
-				t.Error("unexpected StatusCode: want %d but %d\n", tt.resultCode, res.Code)
+				t.Errorf("unexpected StatusCode: want %d but %d\n", tt.resultCode, res.Code)
 			}
 		})
 	}

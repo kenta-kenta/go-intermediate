@@ -1,32 +1,17 @@
 package controllers_test
 
 import (
-	"database/sql"
-	"fmt"
-	"log"
-	"os"
 	"testing"
 
 	"github.com/kenta-kenta/go-intermediate-myapi/controllers"
-	"github.com/kenta-kenta/go-intermediate-myapi/services"
+	"github.com/kenta-kenta/go-intermediate-myapi/controllers/testdata"
 )
 
 var aCon *controllers.ArticleController
 
 func TestMain(m *testing.M) {
-	dbUser := "docker"
-	dbPassword := "docker"
-	dbDatabase := "sampledb"
-	dbConn := fmt.Sprintf("%s:%s@tcp(127.0.0.1:3307)/%s?parseTime=true", dbUser, dbPassword, dbDatabase)
-
-	db, err := sql.Open("mysql", dbConn)
-	if err != nil {
-		log.Println("DB setup fail")
-		os.Exit(1)
-	}
-
-	ser := services.NewMyAppService(db)
-	aCon = controllers.NewArticleController(ser)
+	ser := testdata.NewServiceMock()             // 2. サービス構造体にはsql.DB型が必要
+	aCon = controllers.NewArticleController(ser) // 1. コントローラにはサービス構造体が必要
 
 	m.Run()
 }

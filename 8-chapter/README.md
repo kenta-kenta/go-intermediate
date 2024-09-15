@@ -11,3 +11,8 @@
     - NewRequest関数: ハンドラのhttp.Request型をGoのコード内で作ることができます。
 - w http.ResponseWriter: httpレスポンスの内容をこれに書き込む
     - NewRecorder関数: httptest.ResponseRecoder構造体を作成する
+
+### サービス層のモックを作ろう
+- モックの役割
+    今まではデータベースを起動する必要があった  
+    モックとは「それを呼び出す側が本来欲しがっていた形のデータを、仮で返すためのもの」
