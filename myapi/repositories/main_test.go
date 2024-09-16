@@ -69,7 +69,7 @@ func teardown() {
 func TestMain(m *testing.M) {
 	err := setup()
 	if err != nil {
-		os.Exit(1)
+		os.Exit(3)
 	}
 
 	m.Run()
