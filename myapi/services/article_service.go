@@ -11,21 +11,59 @@ import (
 
 // サービス構造体のメソッド化
 func (s *MyAppService) GetArticleService(articleID int) (models.Article, error) {
+	var article models.Article
+	var commentList []models.Comment
+	var articleGetErr, commentGetErr error
+
+	// article型とerror型を同時に扱う構造体
+	type articleResult struct {
+		article models.Article
+		err     error
+	}
+	// articleResult型のチャネルを定義
+	articleChan := make(chan articleResult)
+	defer close(articleChan)
+
+	// articleChanを通じて、SelectArticleDetail関数の結果を送信
+	go func(ch chan<- articleResult, db *sql.DB, articleID int) {
+		article, err := repositories.SelectArticleDetail(s.db, articleID)
+		ch <- articleResult{article: article, err: err}
+	}(articleChan, s.db, articleID)
+
+	type commentResult struct {
+		commentList *[]models.Comment
+		err         error
+	}
+	commentChan := make(chan commentResult)
+	defer close(commentChan)
+
+	go func(ch chan<- commentResult, db *sql.DB, articleID int) {
+		commentList, err := repositories.SelectCommentList(s.db, articleID)
+		ch <- commentResult{commentList: &commentList, err: err}
+	}(commentChan, s.db, articleID)
+
+	for i := 0; i < 2; i++ {
+		select {
+		case ar := <-articleChan:
+			article, articleGetErr = ar.article, ar.err
+		case cr := <-commentChan:
+			commentList, commentGetErr = *cr.commentList, cr.err
+		}
+	}
+
 	// 1. repositories層の関数SelectArticleDetailで記事の詳細を取得
-	article, err := repositories.SelectArticleDetail(s.db, articleID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			err = apperrors.NAData.Wrap(err, "no data")
+	if articleGetErr != nil {
+		if errors.Is(articleGetErr, sql.ErrNoRows) {
+			err := apperrors.NAData.Wrap(articleGetErr, "no data")
 			return models.Article{}, err
 		}
-		err = apperrors.GetDataFailed.Wrap(err, "fail to get data")
+		err := apperrors.GetDataFailed.Wrap(articleGetErr, "fail to get data")
 		return models.Article{}, err
 	}
 
 	// 2. repositories層の関数SelectCommentListでコメント一覧を取得
-	commentList, err := repositories.SelectCommentList(s.db, articleID)
-	if err != nil {
-		err = apperrors.GetDataFailed.Wrap(err, "fail to get data")
+	if commentGetErr != nil {
+		err := apperrors.GetDataFailed.Wrap(commentGetErr, "fail to get data")
 		return models.Article{}, err
 	}
 
