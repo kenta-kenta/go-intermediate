@@ -2,26 +2,42 @@ package main
 
 import (
 	"fmt"
-	"time"
+	"sync"
 )
 
-func cutIngredient() {
-	fmt.Println("start cutting ingredients")
+var i int
+var mu sync.Mutex
+var wg sync.WaitGroup
 
-	time.Sleep(1 * time.Second)
+func MyFunc1() {
+	defer wg.Done()
+	fmt.Println("MyFunc1 start")
 
-	fmt.Println("finish cutting ingredients")
+	mu.Lock()
+	i += 1
+	mu.Unlock()
+
+	fmt.Println("MyFunc1 finish")
 }
 
-func boilWater() {
-	fmt.Println("start boiling water")
+func MyFunc2() {
+	defer wg.Done()
+	fmt.Println("MyFunc2 start")
 
-	time.Sleep(2 * time.Second)
+	mu.Lock()
+	i -= 1
+	mu.Unlock()
 
-	fmt.Println("The water has boiled")
+	fmt.Println("MyFunc2 finish")
 }
 
 func main() {
-	go cutIngredient()
-	boilWater()
+	i = 0
+
+	wg.Add(2)
+	go MyFunc1()
+	go MyFunc2()
+
+	wg.Wait()
+	fmt.Printf("final result: i = %d\n", i)
 }
