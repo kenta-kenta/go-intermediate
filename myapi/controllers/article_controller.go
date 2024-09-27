@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"log"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/kenta-kenta/go-intermediate-myapi/apperrors"
+	"github.com/kenta-kenta/go-intermediate-myapi/common"
 	"github.com/kenta-kenta/go-intermediate-myapi/controllers/services"
 	"github.com/kenta-kenta/go-intermediate-myapi/models"
 )
@@ -52,6 +54,13 @@ func (c *ArticleController) PostArticleHandler(w http.ResponseWriter, req *http.
 	var reqArticle models.Article
 	if err := json.NewDecoder(req.Body).Decode(&reqArticle); err != nil {
 		err = apperrors.ReqBodyDecodeFailed.Wrap(err, "bad request body")
+		apperrors.ErrorHandler(w, req, err)
+		return
+	}
+
+	authedUserName := common.GetUserName(req.Context())
+	if reqArticle.UserName != authedUserName {
+		err := apperrors.NotMatchUser.Wrap(errors.New("does not match reqBody user and idtoken user"), "invalid parameter")
 		apperrors.ErrorHandler(w, req, err)
 		return
 	}
