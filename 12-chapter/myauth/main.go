@@ -25,11 +25,3 @@ func main() {
 
 	fmt.Println(payload.Claims["name"])
 }
-
-func NewValidator(ctx context.Context, opts ...ClientOption) (*Validator, error)
-
-tokenValidator, err := idtoken.NewValidator(context.Background())
-if err != nil {
-	fmt.Println(err)
-	return
-}
